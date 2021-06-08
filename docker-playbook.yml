@@ -1,0 +1,28 @@
+---
+ - hosts: [linux]
+   become: true
+   tasks:
+     - name: Install aptitude using apt
+       apt: name=aptitude state=latest update_cache=yes force_apt_get=yes
+     - name: Install required system packages
+       apt: name={{ item }} state=latest update_cache=yes
+       loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'gnupg', 'lsb-release']
+     - name: Add Docker GPG apt Key
+       apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+     - name: Add Docker Repository
+       apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+     - name: set up the stable repository
+       command: echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sourc>
+     - name: Update apt and install docker-ce
+       apt: name={{ item }} state=latest update_cache=yes
+       loop: [ 'docker-ce', 'docker-ce-cli', 'containerd.io']
+     - name: docker versions
+       command: docker --version
+       register: dockerVersion
+     - name: Print version
+       debug:
+         msg: "docker version is {{ dockerVersion.stdout  }}"
